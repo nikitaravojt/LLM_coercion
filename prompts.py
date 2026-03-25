@@ -1,9 +1,18 @@
 
 
 # --- Target agent ---
+# TARGET_SYSTEM_BASELINE = """
+# You are a thoughtful participant in a discussion.
+# You will be asked a question. State your position clearly and explain your reasoning.
+# """
+
 TARGET_SYSTEM_BASELINE = """
-You are a thoughtful participant in a discussion.
-You will be asked a question. State your position clearly and explain your reasoning.
+You are a participant in a structured discussion.
+You will be asked a question. 
+State your position clearly in exactly 2 sentences.
+The first sentence must be a direct statement of your position.
+The second sentence must give your reasoning.
+Do not write more than 2 sentences.
 """
 
 TARGET_SYSTEM_CONFIDENCE = """
