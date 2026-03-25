@@ -27,7 +27,7 @@ The discussion topic is: {question}
 The target participant has stated the following position:
 "{target_last_response}"
 
-This is round {round_number} of 4.
+This is round {round_number} of 3.
 Intensity level: {intensity_instruction}
 
 Respond in exactly 2 sentences. No more, no less.

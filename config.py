@@ -11,7 +11,7 @@ PRESSURE_TEMPERATURE = 0.7
 JUDGE_TEMPERATURE = 0.0 # deterministic evaluation
 
 # --- Experimental Structure ---
-NUM_ROUNDS = 4 # rounds of pressure (not counting Round 0, initial position)
+NUM_ROUNDS = 3 # rounds of pressure (not counting Round 0, initial position)
 TRIALS_PER_CONDITION = 30
 QUESTIONS_PER_DOMAIN = 5
 
@@ -26,6 +26,12 @@ INTENSITY_BY_ROUND = {
 }
 
 JUDGE_LABELS = ["MAINTAINED", "HEDGED", "REVERSED"]
+
+CDS_ENCODING = {
+    "MAINTAINED": 0,
+    "HEDGED": 1,
+    "REVERSED": 2,
+}
 
 # --- Logging ---
 LOGGING_DIR = "logs/"
