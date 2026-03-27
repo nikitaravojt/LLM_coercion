@@ -12,6 +12,7 @@ import threading
 import sys
 
 from episode import run_episode, log_episode_narrative
+from config import TARGET_MODEL
 from questions import get_questions
 
 
@@ -45,7 +46,7 @@ STREAM_DELAY_MS = 400  # ms between chat blocks when streaming a result
 
 class DeliberationUI:
 
-    def __init__(self, root, attack_type="consensus", mitigation="none"):
+    def __init__(self, root, attack_type="consensus", mitigation="none", log_filename=None):
         self.root = root
         self.root.title("Deliberation Chamber")
         self.root.configure(bg=BG)
@@ -54,6 +55,7 @@ class DeliberationUI:
         self.questions = get_questions()
         self.attack_type = attack_type
         self.mitigation = mitigation
+        self.log_filename = log_filename  # None → use default from config
 
         # one slot per question — None until run
         self.results = [None] * len(self.questions)
@@ -71,6 +73,7 @@ class DeliberationUI:
         top = tk.Frame(self.root, bg=BG, height=40)
         top.pack(fill=tk.X, padx=10, pady=(8, 0))
         tk.Label(top, text="DELIBERATION CHAMBER", bg=BG, fg=ROUND_FG, font=FONT_HEADER).pack(side=tk.LEFT)
+        tk.Label(top, text=f"target: {TARGET_MODEL}", bg=BG, fg=META_FG, font=FONT_SIDEBAR).pack(side=tk.LEFT, padx=(12, 0))
         self.status_lbl = tk.Label(top, text="", bg=BG, fg=META_FG, font=FONT_SIDEBAR)
         self.status_lbl.pack(side=tk.RIGHT)
 
@@ -188,9 +191,11 @@ class DeliberationUI:
         self._w("  This tool runs simulated social pressure episodes against a target LLM.", "status")
         self._w("  A pressure agent challenges the target's answer each round.", "status")
         self._w("  A judge then classifies each response: MAINTAINED, HEDGED, or REVERSED.\n", "status")
+        from config import NARRATIVE_FILENAME
         self._w(f"  Attack type : {self.attack_type}", "status")
         self._w(f"  Mitigation  : {self.mitigation}", "status")
-        self._w(f"  Questions   : {len(self.questions)} loaded\n", "status")
+        self._w(f"  Questions   : {len(self.questions)} loaded", "status")
+        self._w(f"  Logging to  : {self.log_filename or NARRATIVE_FILENAME}\n", "status")
         self._w("  ─" * 25, "round_delim")
         self._w("\n  Select a question from the sidebar, then press  ▶ Run Selected.\n", "status")
 
@@ -277,6 +282,8 @@ class DeliberationUI:
         st = tk.DISABLED if val else tk.NORMAL
         self.run_btn.configure(state=st)
         self.run_all_btn.configure(state=st)
+        if not val:
+            self._refresh_sidebar()
 
     def _run_current(self):
         """Run the currently selected question."""
@@ -340,7 +347,7 @@ class DeliberationUI:
         )
 
         self.results[idx] = result
-        log_episode_narrative(result)
+        log_episode_narrative(result, **({'filename': self.log_filename} if self.log_filename else {}))
         done_tag = result["final_label"].lower() if result["final_label"].lower() in ("maintained", "hedged", "reversed") else "status"
         self.root.after(0, lambda: self._log(f"\n  Episode complete  —  {result['final_label']}  |  traj: {result['trajectory']}", done_tag))
         self.root.after(0, self._refresh_sidebar)
@@ -354,9 +361,10 @@ class DeliberationUI:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    attack = sys.argv[1] if len(sys.argv) > 1 else "consensus"
-    mitigation = sys.argv[2] if len(sys.argv) > 2 else "none"
+    attack      = sys.argv[1] if len(sys.argv) > 1 else "consensus"
+    mitigation  = sys.argv[2] if len(sys.argv) > 2 else "none"
+    log_file    = sys.argv[3] if len(sys.argv) > 3 else None
 
     root = tk.Tk()
-    app = DeliberationUI(root, attack_type=attack, mitigation=mitigation)
+    app = DeliberationUI(root, attack_type=attack, mitigation=mitigation, log_filename=log_file)
     root.mainloop()

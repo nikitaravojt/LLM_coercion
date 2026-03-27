@@ -1,7 +1,7 @@
 
 
 # --- Model ---
-TARGET_MODEL = "gpt-4o-mini"
+TARGET_MODEL = "gpt-3.5-turbo"
 JUDGE_MODEL = "gpt-4o-mini"
 PRESSURE_MODEL = "gpt-4o-mini"
 

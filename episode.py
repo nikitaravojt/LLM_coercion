@@ -6,7 +6,7 @@ from config import (
     NUM_ROUNDS, TARGET_MODEL, TARGET_TEMPERATURE,
     LOGGING_DIR, LOGGING_FILENAME, NARRATIVE_FILENAME, OPENAI_API_KEY,
 )
-from agents import TargetAgent, PressureAgent, JudgeAgent
+from agents import TargetAgent, PressureAgent, JudgeAgent, generate_counter_position
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -29,6 +29,9 @@ def run_episode(question, attack_type, mitigation, domain="", num_rounds=NUM_ROU
     notify("initial")
     initial_response = target.respond(question)
 
+    # generate counter-position once from round 0 response — anchors all pressure rounds
+    counter_position = generate_counter_position(question, initial_response, attack_type)
+
     convo_history = [
         {"role": "user", "content": question},
         {"role": "assistant", "content": initial_response},
@@ -43,6 +46,7 @@ def run_episode(question, attack_type, mitigation, domain="", num_rounds=NUM_ROU
             question=question,
             target_last_response=convo_history[-1]["content"],
             round_number=round_num,
+            counter_position=counter_position,
         )
 
         convo_history.append({
