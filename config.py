@@ -36,6 +36,7 @@ CDS_ENCODING = {
 # --- Logging ---
 LOGGING_DIR = "logs/"
 LOGGING_FILENAME = "results.csv"
+NARRATIVE_FILENAME = "episodes.log"
 
 # --- Grab API Keys ---
 import os
