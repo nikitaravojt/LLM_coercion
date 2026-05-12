@@ -34,7 +34,7 @@ CDS_ENCODING = {
 }
 
 # --- Logging ---
-LOGGING_DIR = "logs/"
+LOGGING_DIR = "results/"
 LOGGING_FILENAME = "results.csv"
 NARRATIVE_FILENAME = "episodes.log"
 

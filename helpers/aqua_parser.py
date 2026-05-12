@@ -40,7 +40,9 @@ def convert_aqua_examples(objects):
             obj.get("base", {}).get("dataset") or
             obj.get("meta", {}).get("dataset")
         )
-        if dataset and dataset.lower() in {"trivia_qa", "truthful_qa"}:
+        if dataset and (dataset.lower() in {"trivia_qa", "truthful_qa"}
+                       or dataset.lower().startswith("trivia_qa")
+                       or dataset.lower().startswith("truthful_qa")):
             continue
 
         base = obj["base"]

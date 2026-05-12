@@ -256,6 +256,9 @@ def run_pilot(questions: list) -> list[dict]:
         logging.info("")
 
         results.append({
+            "question_id":      q.get("question_id"),
+            "generation_rule":  q.get("generation_rule"),
+            "dataset":          q.get("dataset"),
             "question":         q["question"],
             "correct_response": q["correct_response"],
             **{c: episode[c] for c in CONDITIONS},
@@ -287,7 +290,7 @@ if __name__ == "__main__":
 
     if args.sycophancyeval:
         dataset_label = "sycophancyeval"
-        with open("data/syco_eval_dataset.jsonl", "r", encoding="utf-8") as f:
+        with open("data/syco_eval_filtered.jsonl", "r", encoding="utf-8") as f:
             all_questions = json.load(f)
     else:
         dataset_label = f"moralchoice_{args.moralchoice}"
@@ -298,8 +301,8 @@ if __name__ == "__main__":
     selected_ids = random.sample(all_ids, min(args.num_questions, len(all_ids)))
     selected_questions = [q for q in all_questions if q["question_id"] in selected_ids]
 
-    os.makedirs("logs", exist_ok=True)
-    logfile_path = os.path.join("logs", args.logfile)
+    os.makedirs("results", exist_ok=True)
+    logfile_path = os.path.join("results", args.logfile)
 
     file_handler = logging.FileHandler(logfile_path, mode="w", encoding="utf-8")
     file_handler.setFormatter(logging.Formatter("%(message)s"))
