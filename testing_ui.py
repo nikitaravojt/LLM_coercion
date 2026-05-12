@@ -3,8 +3,8 @@ testing_ui.py
 Messaging-style UI for visualising deliberation chamber episodes.
 Supports multiple questions with sidebar navigation.
 
-Run:  python testing_ui.py [attack_type] [mitigation]
-      e.g. python testing_ui.py consensus none
+Run:  python testing_ui.py [attack_type]
+      e.g. python testing_ui.py consensus
 """
 
 import tkinter as tk
@@ -46,7 +46,7 @@ STREAM_DELAY_MS = 400  # ms between chat blocks when streaming a result
 
 class DeliberationUI:
 
-    def __init__(self, root, attack_type="consensus", mitigation="none", log_filename=None):
+    def __init__(self, root, attack_type="consensus", log_filename=None):
         self.root = root
         self.root.title("Deliberation Chamber")
         self.root.configure(bg=BG)
@@ -54,7 +54,6 @@ class DeliberationUI:
 
         self.questions = get_questions()
         self.attack_type = attack_type
-        self.mitigation = mitigation
         self.log_filename = log_filename  # None → use default from config
 
         # one slot per question — None until run
@@ -193,7 +192,6 @@ class DeliberationUI:
         self._w("  A judge then classifies each response: MAINTAINED, HEDGED, or REVERSED.\n", "status")
         from config import NARRATIVE_FILENAME
         self._w(f"  Attack type : {self.attack_type}", "status")
-        self._w(f"  Mitigation  : {self.mitigation}", "status")
         self._w(f"  Questions   : {len(self.questions)} loaded", "status")
         self._w(f"  Logging to  : {self.log_filename or NARRATIVE_FILENAME}\n", "status")
         self._w("  ─" * 25, "round_delim")
@@ -219,7 +217,7 @@ class DeliberationUI:
         prefix = f"[{batch_pos}]  " if batch_pos else ""
         self._w(f"\n  {prefix}RUNNING EPISODE  —  question {idx+1}/{len(self.questions)}  [{q['domain']}]\n", "round_delim")
         self._w(f"  {q['text']}\n", "status")
-        self._w(f"  Attack : {self.attack_type}  |  Mitigation : {self.mitigation}", "status")
+        self._w(f"  Attack : {self.attack_type}", "status")
         self._w("  " + "─" * 48, "round_delim")
 
     def _log(self, msg, tag="status"):
@@ -241,7 +239,7 @@ class DeliberationUI:
         def header():
             self._w(f"\n  QUESTION {idx+1}/{len(self.questions)}", "status")
             self._w(f"  {q['text']}", "status")
-            self._w(f"  domain: {q['domain']}  |  attack: {self.attack_type}  |  mitigation: {self.mitigation}\n", "status")
+            self._w(f"  domain: {q['domain']}  |  attack: {self.attack_type}\n", "status")
             self._w("── ROUND 0 ─ initial position " + "─" * 30, "round_delim")
             self._w("TARGET", "target_label")
             self._w(result["initial_response"], "target_body")
@@ -341,7 +339,6 @@ class DeliberationUI:
         result = run_episode(
             question=q["text"],
             attack_type=self.attack_type,
-            mitigation=self.mitigation,
             domain=q.get("domain", ""),
             on_progress=on_progress,
         )
@@ -361,10 +358,9 @@ class DeliberationUI:
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    attack      = sys.argv[1] if len(sys.argv) > 1 else "consensus"
-    mitigation  = sys.argv[2] if len(sys.argv) > 2 else "none"
-    log_file    = sys.argv[3] if len(sys.argv) > 3 else None
+    attack   = sys.argv[1] if len(sys.argv) > 1 else "consensus"
+    log_file = sys.argv[2] if len(sys.argv) > 2 else None
 
     root = tk.Tk()
-    app = DeliberationUI(root, attack_type=attack, mitigation=mitigation, log_filename=log_file)
+    app = DeliberationUI(root, attack_type=attack, log_filename=log_file)
     root.mainloop()

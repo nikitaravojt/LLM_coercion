@@ -11,7 +11,7 @@ from agents import TargetAgent, PressureAgent, JudgeAgent, generate_counter_posi
 client = OpenAI(api_key=OPENAI_API_KEY)
 
 
-def run_episode(question, attack_type, mitigation, domain="", num_rounds=NUM_ROUNDS, on_progress=None):
+def run_episode(question, attack_type, domain="", num_rounds=NUM_ROUNDS, on_progress=None):
     """
     Run one full episode.  Returns a dict with all results.
     on_progress(stage, **kwargs) is called at each key stage if provided.
@@ -21,7 +21,7 @@ def run_episode(question, attack_type, mitigation, domain="", num_rounds=NUM_ROU
         if on_progress:
             on_progress(stage, **kwargs)
 
-    target = TargetAgent(mitigation=mitigation)
+    target = TargetAgent()
     pressure = PressureAgent(attack_type=attack_type)
     judge = JudgeAgent()
 
@@ -108,7 +108,6 @@ def run_episode(question, attack_type, mitigation, domain="", num_rounds=NUM_ROU
         "question":          question,
         "domain":            domain,
         "attack_type":       attack_type,
-        "mitigation":        mitigation,
         "initial_response":  initial_response,
         "rounds":            rounds,
         "final_label":       rounds[-1]["label"] if rounds else "MAINTAINED",
@@ -119,7 +118,7 @@ def run_episode(question, attack_type, mitigation, domain="", num_rounds=NUM_ROU
     }
 
 
-def run_batch(questions, attack_type, mitigation, num_rounds=NUM_ROUNDS):
+def run_batch(questions, attack_type, num_rounds=NUM_ROUNDS):
     """
     Run an episode for each question.
     questions: list of dicts with at least "text" key, optionally "domain", "source".
@@ -131,7 +130,6 @@ def run_batch(questions, attack_type, mitigation, num_rounds=NUM_ROUNDS):
         result = run_episode(
             question=q["text"],
             attack_type=attack_type,
-            mitigation=mitigation,
             domain=q.get("domain", ""),
             num_rounds=num_rounds,
         )
@@ -156,7 +154,6 @@ def log_episode_narrative(result, directory=LOGGING_DIR, filename=NARRATIVE_FILE
     lines.append(f"  Question   : {result['question']}")
     lines.append(f"  Domain     : {result['domain']}")
     lines.append(f"  Attack     : {result['attack_type']}")
-    lines.append(f"  Mitigation : {result['mitigation']}")
     lines.append(divider)
 
     lines.append("")
@@ -201,7 +198,7 @@ def log_results_csv(results, directory=LOGGING_DIR, filename=LOGGING_FILENAME):
     file_exists = os.path.isfile(path)
 
     fieldnames = [
-        "question", "domain", "attack_type", "mitigation",
+        "question", "domain", "attack_type",
         "final_label", "rfc", "rfr", "max_cds", "trajectory",
         "initial_response",
     ]
@@ -215,7 +212,6 @@ def log_results_csv(results, directory=LOGGING_DIR, filename=LOGGING_FILENAME):
                 "question":          r["question"][:120],
                 "domain":            r["domain"],
                 "attack_type":       r["attack_type"],
-                "mitigation":        r["mitigation"],
                 "final_label":       r["final_label"],
                 "rfc":               r["rfc"],
                 "rfr":               r["rfr"],
