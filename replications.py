@@ -2,7 +2,7 @@
 replications.py
 Replication of the "are you sure?" sycophancy paradigm.
 
-Loads questions from replication_data/are_you_sure_formatted.jsonl,
+Loads questions from data/syco_eval_dataset.jsonl,
 selects random subset based on seed, and runs the paradigm.
 
 Run:  python replications.py --logfile mylog.log --num_questions 10 --seed 42
@@ -19,7 +19,7 @@ from openai import OpenAI
 from config import TARGET_MODEL, OPENAI_API_KEY
 
 # Load questions from formatted file
-with open("replication_data/are_you_sure_formatted.jsonl", "r", encoding="utf-8") as f:
+with open("data/syco_eval_dataset.jsonl", "r", encoding="utf-8") as f:
     all_questions = json.load(f)
 
 client = OpenAI(api_key=OPENAI_API_KEY)

@@ -1,11 +1,13 @@
 """
 run_pilot.py
 Pilot: three pressure conditions (baseline, authority, consensus)
-on SycophancyEval MCQs from are_you_sure_formatted.jsonl.
+on MCQs from SycophancyEval or MoralChoice datasets.
 
 Run:
   python run_pilot.py --logfile pilot1.log --num_questions 10 --seed 42 --sycophancyeval
   python run_pilot.py --logfile pilot1.log --num_questions 10 --seed 42 --sycophancyeval --verbose
+  python run_pilot.py --logfile moral1.log --num_questions 20 --seed 42 --moralchoice high
+  python run_pilot.py --logfile moral1.log --num_questions 20 --seed 42 --moralchoice low
 """
 
 import re
@@ -41,10 +43,16 @@ CHANGE_LABELS = {
     "CtI":   "Correct -> Incorrect",
     "ItC":   "Incorrect -> Correct",
     "other": "Incorrect -> Other Incorrect",
+    "flip":  "Flipped (no ground truth)",
 }
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
+
+def _trunc(s: str) -> str:
+    s = s.replace("\n", " ").strip()
+    return ("..." + s[-60:]) if len(s) > 60 else s
+
 
 def _ask_target(messages: list) -> str:
     response = client.chat.completions.create(
@@ -87,13 +95,6 @@ def _extract_letter(text: str, question: str = "") -> str | None:
     return None
 
 
-def _trunc(s: str) -> str:
-    if VERBOSE:
-        return s.strip()
-    s = s.replace("\n", " ").strip()
-    return ("..." + s[-60:]) if len(s) > 60 else s
-
-
 
 def _parse_options(question: str) -> str:
     """Return a string of available option letters found in the question, e.g. 'ABCD'."""
@@ -102,6 +103,8 @@ def _parse_options(question: str) -> str:
 
 
 def _change_type(r0_letter, final_letter, correct) -> str:
+    if correct is None:
+        return "flip"
     initial_correct = r0_letter == correct
     final_correct = final_letter == correct
     if initial_correct and not final_correct:
@@ -114,7 +117,7 @@ def _change_type(r0_letter, final_letter, correct) -> str:
 def _log_response(label: str, response: str, letter, status: str = "") -> None:
     suffix = f"  -> {letter}" + (f"  {status}" if status else "")
     prefix = f"  {label}: "
-    cont   = " " * len(prefix)  # continuation indent aligns with opening quote
+    cont   = " " * len(prefix)
 
     if VERBOSE:
         lines = [l.rstrip() for l in response.strip().splitlines() if l.strip()]
@@ -177,7 +180,19 @@ def _run_condition(q: dict, condition: str) -> dict:
         reversed_ = letter is not None and r0_letter is not None and letter != r0_letter
         status = "REVERSED" if reversed_ else "MAINTAINED"
 
-        logging.info(f"  R{round_num} [{_trunc(challenge)}]")
+        if VERBOSE:
+            ch_lines = [l.rstrip() for l in challenge.strip().splitlines() if l.strip()]
+            if len(ch_lines) <= 1:
+                logging.info(f"  R{round_num} [{ch_lines[0] if ch_lines else ''}]")
+            else:
+                ch_prefix = f"  R{round_num} ["
+                ch_cont   = " " * len(ch_prefix)
+                logging.info(f"{ch_prefix}{ch_lines[0]}")
+                for ch_line in ch_lines[1:-1]:
+                    logging.info(f"{ch_cont}{ch_line}")
+                logging.info(f"{ch_cont}{ch_lines[-1]}]")
+        else:
+            logging.info(f"  R{round_num} [{_trunc(challenge)}]")
         _log_response("   ", response, letter, status)
 
         messages.append({"role": "assistant", "content": response})
@@ -252,14 +267,18 @@ def run_pilot(questions: list) -> list[dict]:
 # ── Entry point ────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Pilot: three pressure conditions on SycophancyEval MCQs.")
+    parser = argparse.ArgumentParser(description="Pilot: pressure conditions on SycophancyEval or MoralChoice MCQs.")
     parser.add_argument("--logfile",        required=True)
     parser.add_argument("--num_questions",  type=int, default=10)
     parser.add_argument("--seed",           type=int, default=42)
-    parser.add_argument("--sycophancyeval", action="store_true",
-                        help="Load MCQs from replication_data/are_you_sure_formatted.jsonl")
     parser.add_argument("--verbose",        action="store_true",
                         help="Log full responses without truncation")
+
+    dataset_group = parser.add_mutually_exclusive_group(required=True)
+    dataset_group.add_argument("--sycophancyeval", action="store_true",
+                               help="Load MCQs from data/syco_eval_dataset.jsonl")
+    dataset_group.add_argument("--moralchoice", choices=["high", "low", "both"],
+                               help="Load from data/moralchoice_{high|low|both}.json")
     args = parser.parse_args()
 
     SEED = args.seed
@@ -267,10 +286,13 @@ if __name__ == "__main__":
     random.seed(args.seed)
 
     if args.sycophancyeval:
-        with open("replication_data/are_you_sure_formatted.jsonl", "r", encoding="utf-8") as f:
+        dataset_label = "sycophancyeval"
+        with open("data/syco_eval_dataset.jsonl", "r", encoding="utf-8") as f:
             all_questions = json.load(f)
     else:
-        raise NotImplementedError("Only --sycophancyeval is currently supported. Other question sets coming soon.")
+        dataset_label = f"moralchoice_{args.moralchoice}"
+        with open(f"data/moralchoice_{args.moralchoice}.json", "r", encoding="utf-8") as f:
+            all_questions = json.load(f)
 
     all_ids = [q["question_id"] for q in all_questions]
     selected_ids = random.sample(all_ids, min(args.num_questions, len(all_ids)))
@@ -289,11 +311,12 @@ if __name__ == "__main__":
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     logging.info(
         f"Model: {TARGET_MODEL}\nDate/Time: {now}\nTemperature: {TEMPERATURE}\n"
-        f"Questions: {len(selected_questions)}\nSeed: {args.seed}\nVerbose: {VERBOSE}\n"
-        f"Conditions: {', '.join(CONDITIONS)}\nSelected IDs: {selected_ids}\n"
+        f"Dataset: {dataset_label}\nQuestions: {len(selected_questions)}\nSeed: {args.seed}\n"
+        f"Verbose: {VERBOSE}\nConditions: {', '.join(CONDITIONS)}\nSelected IDs: {selected_ids}\n"
     )
     print(f"Model      : {TARGET_MODEL}")
     print(f"Temperature: {TEMPERATURE}")
+    print(f"Dataset    : {dataset_label}")
     print(f"Questions  : {len(selected_questions)}")
     print(f"Seed       : {args.seed}")
     print(f"Verbose    : {VERBOSE}")
