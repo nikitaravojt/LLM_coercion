@@ -1,9 +1,8 @@
 """
-analyse.py
-Compute sycophancy metrics from a run_pilot.py JSON output.
-Handles both SycophancyEval (MCQ, ground truth) and MoralChoice (normative, no ground truth).
+Compute sycophancy metrics from a run_pilot.py JSON output. Nice formatting assisted by Claude Code.
 
-Run:  python helpers/analyse.py logs/pilot3.json
+Run example:
+python helpers/analyse.py logs/pilot3.json
 """
 
 import json
@@ -11,8 +10,7 @@ import sys
 from collections import defaultdict
 
 META_KEYS = {"question_id", "generation_rule", "dataset", "question", "correct_response"}
-
-W = 64
+W = 64 # for padding headers
 
 
 def pct(n, d):
@@ -28,8 +26,8 @@ def analyse(path: str):
     nc = len(conditions)
 
     has_ground_truth = any(r["correct_response"] is not None for r in results)
-    has_rule         = any(r.get("generation_rule") for r in results)
-    dataset_label    = path
+    has_rule = any(r.get("generation_rule") for r in results)
+    dataset_label = path
 
     print("=" * W)
     print(f"  ANALYSIS  —  {dataset_label}")
@@ -37,18 +35,17 @@ def analyse(path: str):
     print(f"  Ground truth : {'yes' if has_ground_truth else 'no (normative)'}")
     print("=" * W)
 
-    # ── Per-condition metrics ──────────────────────────────────────────────────
-
+    # per-condition analysis
     for cond in conditions:
-        rows   = [r[cond] for r in results]
+        rows = [r[cond] for r in results]
         ground = [r["correct_response"] for r in results]
 
         total_reversed = sum(1 for r in rows if r["reversal_round"] is not None)
-        maintained     = n - total_reversed
+        maintained = n - total_reversed
 
-        flip  = sum(1 for r in rows if r["change_type"] == "flip")
-        cti   = sum(1 for r in rows if r["change_type"] == "CtI")
-        itc   = sum(1 for r in rows if r["change_type"] == "ItC")
+        flip = sum(1 for r in rows if r["change_type"] == "flip")
+        cti = sum(1 for r in rows if r["change_type"] == "CtI")
+        itc = sum(1 for r in rows if r["change_type"] == "ItC")
         other = sum(1 for r in rows if r["change_type"] == "other")
 
         by_round = defaultdict(int)
@@ -85,8 +82,7 @@ def analyse(path: str):
             bar = "#" * by_round[rn]
             print(f"    R{rn} : {by_round[rn]:>3}  ({pct(by_round[rn], total_reversed)})  {bar}")
 
-    # ── Generation rule breakdown (moralchoice only) ───────────────────────────
-
+    # generation rule breakdown (moralchoice only)
     if has_rule:
         print(f"\n{'=' * W}")
         print("  REVERSAL RATE BY MORAL RULE DOMAIN")
@@ -111,7 +107,7 @@ def analyse(path: str):
                 row += f"{f'{rev}/{ng} ({pct(rev, ng)})':>{col_w}}"
             print(row)
 
-    # ── Per-question vulnerability profile ────────────────────────────────────
+    # Per-question vulnerability
 
     print(f"\n{'=' * W}")
     print("  PER-QUESTION VULNERABILITY PROFILE")
@@ -142,8 +138,7 @@ def analyse(path: str):
         row = f"  {i+1:>3}  {label:>10}  " + "  ".join(f"{c:>12}" for c in cells)
         print(row)
 
-    # ── Cross-condition summary ────────────────────────────────────────────────
-
+    # Cross-condition summary
     print(f"\n{'=' * W}")
     print("  CROSS-CONDITION SUMMARY")
     print(f"{'=' * W}")

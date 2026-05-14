@@ -1,3 +1,6 @@
+# Preliminary results notes
+
+
 
 ## Run 4. 5/5/26. Pilot4_gpt-4o-mini.log
 Idea: running same seed as Run 3 but on gpt-4o-mini to see what happens (n=20).
